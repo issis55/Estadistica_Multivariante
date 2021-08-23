@@ -1,0 +1,108 @@
+---
+title: "ACP IRIS"
+author: "Quetzal Lopez"
+date: "22/8/2021"
+output: html_document
+---
+<center> 
+
+<span style="color: blue;"><h1> Analisis de Componentes Principales ACP del dataset **Iris** </h1> </span>
+
+</center>
+
+Este trabajo analiza una base de datos donde se recogen las caracteristicas de ancho y largo tanto del sépalo como del petalo de la flor Iris, esta flor cuenta con más de 300 variedades, y forma parte de la familia de las **Iridáceas**.
+
+Esta hermosa flor tiene tres petalos externos que se abren de forma ovalada y tres pequeños petalos internos los cuales se doblan en la parte fertil de la flor. Sus colores son muy variados, tanto que los antiguos griegos la asociaban al arcoiris. En esta cultura representaba la unión de lo eterno o celestial con lo terrenal. También durante la edad media en Francia era conocida como *Fleur de Lis* y fué el simbolo de la monarquía Francesa.  
+
+Analizaremos el dataset de Iris el cual consta de 150 datos, de 3 grupos de flores: 
+
+
+* Versicolor 
+
+* Setosa
+
+* Virginica
+
+<center>
+
+![](C:\Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\02 Analisis Multivariante\01 Documentos\iris.jpg)
+
+</center>
+
+En el dataset se miden en centimetros cuatro variables para cada especie de flor:
+
+- Ancho del petalo
+- Largo del petalo
+- Ancho del Sépalo
+- Largo del Sépalo
+
+
+<center>
+
+![](C:\Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\02 Analisis Multivariante\01 Documentos\iris_petal-sepal.jpg)
+
+</center>
+
+
+La estructura general es un dataframe que consta de 5 variables, 4 son de tipo númerico y una de tipo categorico, con 150 datos u observaciones. 
+
+```{r Cargar la base de datos}
+str(iris)
+
+```
+
+Realizaremos una division en dos partes de la base de datos mediante muestreo aleatorio simple con remplazo. Una parte que comprendera el 80% de los datos se usará para establecer el modelo para el ACP (Training, ind = 1). Y la segunda parte comprenderá el 20% de los registros, la cuál se utilizará para la verificación del modelo (Test, ind = 2). 
+
+```{r MAS}
+set.seed(42)
+ind <- sample(2,nrow(iris),
+              replace=TRUE,
+              prob = c(0.8,0.2))
+
+(train <- iris[ind==1,])
+(test  <- iris[ind==2,])
+```
+
+
+A continuación llamaremos a la libreria Psych,y mediante el comando pairs panels se realizará un conjunto de gráficas donde observamos un diagrama de dispersión de matrices.  
+
+```{r}
+library(psych)
+pairs.panels(train[,-5],  # quitar la columna 5
+             gap=0,
+             bg=c("blue","yellow","red")[train$Species],
+             pch=21)
+```
+
+
+En la diagonal del conjunto de gráficas observamos histogramas de distribución de las variables númericas, de forma que observamos que las variables ancho y largo de Sépalo siguen una distribución normal, mientras que ancho y largo de Pétalo tienen una distriución bimodal. 
+
+En la parte inferior a la diagonal observamos gráficas de dispersión bivariadas, por especie, donde observamos que las variables cuantitativas Largo del Sepalo/Largo del petalo, Largo del petalo/Ancho del petalo son las que tienen una correlación positiva.
+
+En la parte superior a la diagonal se observa la correlación de Pearson, la cuál es una medida de dependencia lineal entre dos variables, con valor de 0.86 para el par Largo del sepalo/ Largo del petalo y 0.96 para el par Largo del petalo/Ancho del petalo.
+
+
+A continuación se disminuira la dimensionalidad de la base de datos, es decir se reducirá el número de caracteristicas, tratando de conservar el máximo posible de información. 
+Obtenemos los componentes que son los nuevos conjuntos de caracteristicas, el primero es el que tiene la máxima variabilidad de los datos, y continua así de forma descendente.
+
+```{r}
+pc<- prcomp(train[,-5],
+            center = TRUE,
+            scale. = TRUE);pc
+
+```
+
+Con el comando "summary" observamos que entre los dos primeros componentes se abarca el 0.9531 del porcentaje de la varianza. 
+
+```{r}
+summary(pc)
+
+```
+
+Graficamos con el comando "plot" los componentes principales, se observa que la mayor parte de los datos están contenidos en los dos primeros componentes. 
+
+```{r}
+plot(pc, main = "Analisis de Componentes Principales Dataset Iris",  col="darkblue")
+```
+
+
