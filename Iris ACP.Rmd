@@ -1,16 +1,23 @@
 ---
-title: "ACP IRIS"
 author: "Quetzal Lopez"
 date: "22/8/2021"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
+<center>
+
+![](C:/Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\Multivariante R\Multivariante\Fotos\Campo de Iris.jpg)
+</center>
+
+
 <center> 
 
 <span style="color: blue;"><h1> Analisis de Componentes Principales ACP del dataset **Iris** </h1> </span>
 
 </center>
 
-Este trabajo analiza una base de datos donde se recogen las caracteristicas de ancho y largo tanto del sépalo como del petalo de la flor Iris, esta flor cuenta con más de 300 variedades, y forma parte de la familia de las **Iridáceas**.
+Este trabajo analiza una base de datos donde se recogen las caracteristicas de ancho y largo tanto del sépalo como del petalo de la flor Iris, esta flor cuenta con más de 300 variedades, y forma parte de la familia de las **Iridáceas**, con la finalidad de realizar un modelo de predicción de la especie de la flor, basados en un analisis de componentes principales y regresión logistica multinomial.
 
 Esta hermosa flor tiene tres petalos externos que se abren de forma ovalada y tres pequeños petalos internos los cuales se doblan en la parte fertil de la flor. Sus colores son muy variados, tanto que los antiguos griegos la asociaban al arcoiris. En esta cultura representaba la unión de lo eterno o celestial con lo terrenal. También durante la edad media en Francia era conocida como *Fleur de Lis* y fué el simbolo de la monarquía Francesa.  
 
@@ -25,7 +32,7 @@ Analizaremos el dataset de Iris el cual consta de 150 datos, de 3 grupos de flor
 
 <center>
 
-![](C:\Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\02 Analisis Multivariante\01 Documentos\iris.jpg)
+![](C:/Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\Multivariante R\Multivariante\Fotos\iris.jpg)
 
 </center>
 
@@ -39,14 +46,16 @@ En el dataset se miden en centimetros cuatro variables para cada especie de flor
 
 <center>
 
-![](C:\Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\02 Analisis Multivariante\01 Documentos\iris_petal-sepal.jpg)
+![](C:/Users\quetz\OneDrive\Documentos\02 MAESTRIA\10 Segundo semestre\Multivariante R\Multivariante\Fotos/iris_petal-sepal.jpg)
 
 </center>
 
 
 La estructura general es un dataframe que consta de 5 variables, 4 son de tipo númerico y una de tipo categorico, con 150 datos u observaciones. 
 
-```{r Cargar la base de datos}
+```{r Cargar la base de datos,warning=FALSE}
+library(psych)
+library(nnet)
 str(iris)
 
 ```
@@ -59,16 +68,15 @@ ind <- sample(2,nrow(iris),
               replace=TRUE,
               prob = c(0.8,0.2))
 
-(train <- iris[ind==1,])
-(test  <- iris[ind==2,])
+train <- iris[ind==1,]
+test  <- iris[ind==2,]
 ```
 
 
-A continuación llamaremos a la libreria Psych,y mediante el comando pairs panels se realizará un conjunto de gráficas donde observamos un diagrama de dispersión de matrices.  
+A continuación llamaremos a la libreria Psych,y mediante el comando pairs panels se realizará un conjunto de gráficas donde observamos un diagrama de dispersión de matrices, de acuerdo a la especie.  
 
-```{r}
-library(psych)
-pairs.panels(train[,-5],  # quitar la columna 5
+```{r Gráfica de dispersion de matrices}
+pairs.panels(train[,-5], 
              gap=0,
              bg=c("blue","yellow","red")[train$Species],
              pch=21)
@@ -81,11 +89,12 @@ En la parte inferior a la diagonal observamos gráficas de dispersión bivariada
 
 En la parte superior a la diagonal se observa la correlación de Pearson, la cuál es una medida de dependencia lineal entre dos variables, con valor de 0.86 para el par Largo del sepalo/ Largo del petalo y 0.96 para el par Largo del petalo/Ancho del petalo.
 
+## **Analisis de Componentes Principales**
 
 A continuación se disminuira la dimensionalidad de la base de datos, es decir se reducirá el número de caracteristicas, tratando de conservar el máximo posible de información. 
 Obtenemos los componentes que son los nuevos conjuntos de caracteristicas, el primero es el que tiene la máxima variabilidad de los datos, y continua así de forma descendente.
 
-```{r}
+```{r Componentes Principales}
 pc<- prcomp(train[,-5],
             center = TRUE,
             scale. = TRUE);pc
@@ -94,15 +103,71 @@ pc<- prcomp(train[,-5],
 
 Con el comando "summary" observamos que entre los dos primeros componentes se abarca el 0.9531 del porcentaje de la varianza. 
 
-```{r}
+```{r Summary PC}
 summary(pc)
 
 ```
 
-Graficamos con el comando "plot" los componentes principales, se observa que la mayor parte de los datos están contenidos en los dos primeros componentes. 
+Graficamos con el comando "plot" los componentes principales, se observa que la mayor parte (95%) de los datos están contenidos en los dos primeros componentes. 
+
+```{r Grafico de CP}
+plot(pc, main = "Analisis de Componentes Principales Dataset Iris",  col="darkblue")
+```
+
+## **Entrenamiento del modelo de predicción**
+Con la función *predict* se obtienen los valores predichos en base al objeto de componentes principales, en la base entrenamiento.
+
+Posteriormente se forma un  dataframe con los valores predichos y se anexa una columna con los nombres de las especies.
+```{r Entrenamiento, warning=FALSE}
+
+pred <- predict(pc,train)
+training <- data.frame(pred, train[5])
+
+```
+
+
+## **Validación del modelo de predicción**
+
+Se realiza un nuevo dataframe con la validación del modelo del conjunto de datos de prueba.
+```{r Validación del modelo}
+testing <- predict(pc, test)
+testing <- data.frame(testing,test[5])
+training$Species <- relevel(training$Species,ref = "setosa")
+```
+
+## **Regresión Logistica Multinomial**
+
+Con la función *multinom* y el conjunto de entrenamiento se establece una regresión logistica con los dos primeros componentes principales, que fuerón los que recogierón la mayor parte de la varianza.
+
+
+```{r Modelo de regresión Logistica}
+modelo <- multinom(Species~PC1+PC2,data=training)
+summary(modelo)
+```
+
+## **Validación del modelo de predicción en los datos de entrenamiento**
+
+Se realiza una predicción del modelo con el conjunto de entrenamiento y se obtiene un margen de error del 7.8% en las predicciones que realiza el modelo.
 
 ```{r}
-plot(pc, main = "Analisis de Componentes Principales Dataset Iris",  col="darkblue")
+prediction <- predict(modelo,training)
+tablita <- table(prediction,training$Species)
+1-sum(diag(tablita))/sum(tablita)
+
+```
+
+## **Validación del modelo de predicción en los datos de Prueba**
+
+Se prueba el modelo en el conjunto de datos de validación, y se obtiene un 5.7% de margen de error en la aplicación del modelo.
+
+```{r Datos de prueba}
+testing$Species <- relevel(testing$Species,ref = "setosa")
+modelo1 <- multinom(Species~PC1+PC2, data=testing)
+summary(modelo)
+
+prediction1 <- predict(modelo,testing)
+tablita1 <- table(prediction1, testing$Species)
+1-sum(diag(tablita1))/sum(tablita1) 
 ```
 
 
